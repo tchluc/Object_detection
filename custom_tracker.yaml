@@ -6,7 +6,7 @@ track_buffer: 60
 match_thresh: 0.8
 appearance_thresh: 0.25
 proximity_thresh: 0.5
-with_reid: True         # Garde ça pour occlusions
+with_reid: True
 gmc_method: orb
 fuse_score: True
 model: auto           

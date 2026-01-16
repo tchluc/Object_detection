@@ -5,32 +5,28 @@ import numpy as np
 from ultralytics import YOLO
 from ultralytics.trackers.bot_sort import ReID
 from sklearn.metrics.pairwise import cosine_similarity
-import cv2  # Pour dessiner zones et checker intersections
+import cv2
 
-# 1. Configuration des dossiers
+
 input_folder = "VIDEO_RESEAU_1"
 output_folder = "RESULTATS_DRSI_11"
 os.makedirs(output_folder, exist_ok=True)
 
-# 2. Chargement des modèles
-model = YOLO('yolo11m.pt')
-reid = ReID(model='yolo26n-cls.pt')  # Ou 'yolov8n-cls.pt' si besoin
 
-# 3. Définition des zones d'alertes
-# UTILISEZ select_zone.py pour obtenir les coordonnées [x1, y1, x2, y2] pour vos vidéos
-# Configurez les zones ici :
+model = YOLO('yolo11m.pt')
+reid = ReID(model='yolo26n-cls.pt')
+
 alert_zones = {
     'CAMERA_HALL_PORTE_GAUCHE.mp4': [[100, 100, 500, 500]], 
-    # 'votre_video.mp4': [[x1, y1, x2, y2]],
+
 }
-zone_color = (0, 0, 255)  # Rouge pour dessin des zones
-alert_color = (0, 0, 255) # Couleur de l'alerte
+zone_color = (0, 0, 255)
+alert_color = (0, 0, 255)
 zone_thickness = 2
 
-# Fonction pour checker si un objet est dans une zone (rectangle simple ; pour polygone, utilise cv2.pointPolygonTest)
 def is_in_zone(box, zones):
     x, y, w, h = box
-    center_x, center_y = x, y  # Centre de la bbox
+    center_x, center_y = x, y
     for zone in zones:
         x1, y1, x2, y2 = zone
         if x1 < center_x < x2 and y1 < center_y < y2:
@@ -39,12 +35,12 @@ def is_in_zone(box, zones):
 
 csv_path = os.path.join(output_folder, "donnees_trajectoires.csv")
 
-global_tracks = {}  # {global_id: {'embedding': np.array, 'last_pos': (x,y), 'last_video': str}}
+global_tracks = {}
 global_id_counter = 1
 
 with open(csv_path, mode='w', newline='') as f:
     writer = csv.writer(f)
-    writer.writerow(['camera', 'frame', 'id', 'class_name', 'x_center', 'y_center', 'alerte'])  # Ajout colonne 'alerte'
+    writer.writerow(['camera', 'frame', 'id', 'class_name', 'x_center', 'y_center', 'alerte'])
 
     video_files = [f for f in os.listdir(input_folder) if f.endswith(('.mp4', '.MP4'))]
 
@@ -52,7 +48,7 @@ with open(csv_path, mode='w', newline='') as f:
         video_path = os.path.join(input_folder, video_name)
         print(f"Traitement : {video_name}")
 
-        # Récup zones pour cette vidéo (défaut : aucune)
+
         current_zones = alert_zones.get(video_name, [])
 
         results = model.track(
@@ -66,12 +62,12 @@ with open(csv_path, mode='w', newline='') as f:
             conf=0.5,
             iou=0.5,
             vid_stride=1,
-            save=True  # Sauvegarde vidéo annotée
+            save=True
         )
 
         local_to_global = {}
 
-        # Ouvrir la vidéo pour dessin (optionnel : pour ajouter zones sur la sortie sauvegardée)
+
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -81,12 +77,12 @@ with open(csv_path, mode='w', newline='') as f:
 
         frame_idx = 0
         for r in results:
-            # Lire frame originale pour dessin
+
             ret, frame = cap.read()
             if not ret:
                 break
 
-            # Dessiner zones d'alertes sur le frame
+
             for zone in current_zones:
                 cv2.rectangle(frame, (zone[0], zone[1]), (zone[2], zone[3]), zone_color, zone_thickness)
 
@@ -111,7 +107,7 @@ with open(csv_path, mode='w', newline='') as f:
 
                     embedding = embeddings[i]
 
-                    # Matching global (comme avant)
+
                     matched = False
                     for g_id, data in global_tracks.items():
                         sim = cosine_similarity(embedding.reshape(1, -1), data['embedding'].reshape(1, -1))[0][0]
@@ -128,33 +124,22 @@ with open(csv_path, mode='w', newline='') as f:
                         global_tracks[global_id_counter] = {'embedding': embedding, 'last_pos': (x, y), 'last_video': video_name}
                         global_id_counter += 1
 
-                    # Checker alerte
+
                     alerte = 1 if is_in_zone(box, current_zones) else 0
                     if alerte:
                         print(f"Alerte ! Objet {local_to_global[obj_id]} ({name}) dans zone sur {video_name} frame {frame_idx}")
 
-                    # Écrire dans CSV avec alerte
+
                     writer.writerow([video_name, frame_idx, local_to_global[obj_id], name, x, y, alerte])
 
-                    # Optionnel : Dessiner alerte sur frame (ex. : cercle rouge sur objet en alerte)
-                    # Optionnel : Dessiner alerte sur frame (ex. : cercle rouge sur objet en alerte)
                     if alerte:
-                        # Cercle sur l'objet
                         cv2.circle(frame, (int(x), int(y)), 10, alert_color, -1)
-                        # Texte ALERTE en haut de l'écran
-                        cv2.putText(frame, "ALERTE INTRUSION!", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 3, alert_color, 5)
-                        # Texte sur l'objet
-                        cv2.putText(frame, "ALERTE", (int(x), int(y)-20), cv2.FONT_HERSHEY_SIMPLEX, 1, alert_color, 2)
-
-            # Ajouter annotations YOLO sur le frame (si besoin ; sinon, utilise r.plot())
-            annotated_frame = r.plot(img=frame)  # Superpose annotations YOLO sur notre frame modifié
-
-            # Écrire frame annoté dans vidéo sortie
+            annotated_frame = r.plot(img=frame)
             out.write(annotated_frame)
 
             frame_idx += 1
 
-        # Nettoyage
+
         cap.release()
         out.release()
         del results
