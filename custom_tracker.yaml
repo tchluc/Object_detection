@@ -1,12 +1,13 @@
-tracker_type: botsort
-track_high_thresh: 0.5
-track_low_thresh: 0.1
-new_track_thresh: 0.6
-track_buffer: 60
-match_thresh: 0.8
-appearance_thresh: 0.25
-proximity_thresh: 0.5
-with_reid: True
-gmc_method: orb
-fuse_score: True
-model: auto           
+# Configuration du tracker BotSort pour un suivi optimal
+tracker_type: botsort          # Type de tracker (BotSort avec ReID)
+track_high_thresh: 0.5         # Seuil de confiance élevé pour maintenir un track
+track_low_thresh: 0.1          # Seuil de confiance bas pour continuer un track
+new_track_thresh: 0.6          # Seuil pour créer un nouveau track
+track_buffer: 90               # Nombre de frames pour garder un track perdu (augmenté pour meilleur suivi)
+match_thresh: 0.8              # Seuil de correspondance IoU entre détections
+appearance_thresh: 0.25        # Seuil de similarité d'apparence pour ReID
+proximity_thresh: 0.5          # Seuil de proximité spatiale
+with_reid: True                # Activer la réidentification (ReID)
+gmc_method: orb                # Méthode de compensation de mouvement global
+fuse_score: True               # Fusionner les scores de détection et tracking
+model: auto                    # Modèle ReID automatique
