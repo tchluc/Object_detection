@@ -31,7 +31,8 @@ def process_video_task(video_name, shared_global_tracks, shared_target_id, globa
     try:
         root = tk.Tk()
         root.withdraw()
-    except:
+    except (ImportError, tk.TclError):
+        # Tkinter non disponible ou problème d'affichage
         root = None
 
     print(f"[{video_name}] DÉMARRAGE...")
@@ -158,7 +159,9 @@ def process_video_task(video_name, shared_global_tracks, shared_target_id, globa
                             if crop_x2 > crop_x1 and crop_y2 > crop_y1:
                                 target_crop = frame[crop_y1:crop_y2, crop_x1:crop_x2]
                                 cv2.imshow(f"Tracking ID {current_target}", target_crop)
-                        except: pass
+                        except (cv2.error, IndexError, ValueError):
+                            # Erreur de traitement d'image ou coordonnées invalides
+                            pass
                     
                     # Dessiner la boîte englobante et l'ID
                     cv2.rectangle(frame, (x1, y1), (x2, y2), color, thickness)

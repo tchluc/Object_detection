@@ -17,7 +17,7 @@ def check_file_has_docstring(filepath):
         tree = ast.parse(content)
         docstring = ast.get_docstring(tree)
         return docstring is not None and len(docstring) > 20
-    except:
+    except (SyntaxError, ValueError):
         return False
 
 
@@ -31,7 +31,7 @@ def check_functions_have_docstrings(filepath):
         functions = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
         documented = sum(1 for func in functions if ast.get_docstring(func))
         return len(functions), documented
-    except:
+    except (SyntaxError, ValueError):
         return 0, 0
 
 
@@ -95,12 +95,19 @@ def validate_improvements():
     if os.path.exists('custom_tracker.yaml'):
         with open('custom_tracker.yaml', 'r') as f:
             content = f.read()
-            # Vérifier que track_buffer est >= 90
-            if 'track_buffer: 90' in content or 'track_buffer: 100' in content or 'track_buffer: 120' in content:
-                print(f"   ✓ track_buffer optimisé (≥90)")
-                results.append(True)
+            # Extraire la valeur de track_buffer
+            import re
+            match = re.search(r'track_buffer:\s*(\d+)', content)
+            if match:
+                buffer_value = int(match.group(1))
+                if buffer_value >= 90:
+                    print(f"   ✓ track_buffer optimisé ({buffer_value} ≥ 90)")
+                    results.append(True)
+                else:
+                    print(f"   ✗ track_buffer non optimisé ({buffer_value} < 90)")
+                    results.append(False)
             else:
-                print(f"   ✗ track_buffer non optimisé")
+                print(f"   ✗ track_buffer non trouvé")
                 results.append(False)
     else:
         print(f"   ✗ custom_tracker.yaml manquant")
