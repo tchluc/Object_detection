@@ -6,3 +6,6 @@ VIDEO_RESEAU_1/
 *.avi
 *.mov
 *.mkv
+__pycache__/
+*.pyc
+*.pyo
