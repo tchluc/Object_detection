@@ -16,10 +16,24 @@ REID_MODEL_PATH = 'yolo26n-cls.pt'      # Modèle pour la réidentification (ReI
 TRACKER_CONFIG = "custom_tracker.yaml"   # Configuration du tracker BotSort
 
 # --- Zones d'Alerte ---
-# Format: 'nom_video.mp4': [[x1, y1, x2, y2], [x1, y1, x2, y2], ...]
-# Plusieurs zones peuvent être définies par vidéo
+# Format: 'nom_video.mp4': [zone1, zone2, ...]
+# 
+# Types de zones supportés:
+# 1. Rectangle: [x1, y1, x2, y2]
+# 2. Polygone: [(x1, y1), (x2, y2), (x3, y3), ...]
+#
+# Exemples:
+# - Rectangle simple: [[100, 100, 500, 500]]
+# - Polygone: [[(100, 100), (500, 100), (500, 500), (100, 500)]]
+# - Mixte: [[100, 100, 500, 500], [(600, 100), (800, 100), (800, 300)]]
+#
+# Utilisez select_zone.py pour les rectangles
+# Utilisez select_polygon_zone.py pour les polygones (surfaces au sol)
+#
 ALERT_ZONES = {
     'CAMERA_HALL_PORTE_GAUCHE.mp4': [[99, 332, 252, 349]],
+    # Exemple avec polygone (décommentez et ajustez):
+    # 'autre_video.mp4': [[(100, 100), (500, 100), (400, 300), (200, 300)]],
 }
 
 # --- Paramètres d'Affichage ---

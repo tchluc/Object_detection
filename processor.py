@@ -88,8 +88,7 @@ def process_video_task(video_name, shared_global_tracks, shared_target_id, globa
             if not ret: break
 
             # Dessiner les zones d'alerte sur la frame
-            for zone in current_zones:
-                cv2.rectangle(frame, (zone[0], zone[1]), (zone[2], zone[3]), config.ZONE_COLOR, config.ZONE_THICKNESS)
+            frame = alerts.draw_zones(frame, current_zones, config.ZONE_COLOR, config.ZONE_THICKNESS)
 
             # Traiter les détections si des objets sont présents
             if r.boxes.id is not None:
