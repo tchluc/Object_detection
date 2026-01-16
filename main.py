@@ -1,30 +1,41 @@
+"""
+Script principal pour la détection et le suivi d'objets multi-vidéos.
+Utilise le multiprocessing pour traiter plusieurs vidéos en parallèle.
+"""
+
 import os
 import multiprocessing
 import config
 from processor import process_video_task
+from summary import generate_object_summary, print_summary_stats
 
 def main():
-    # Necessary for Windows multiprocessing
+    """
+    Point d'entrée principal du programme.
+    Lance le traitement parallèle des vidéos et génère un résumé final.
+    """
+    # Nécessaire pour le multiprocessing sous Windows
     multiprocessing.freeze_support()
 
-    # Shared Memory Manager
+    # Gestionnaire de mémoire partagée pour la communication entre processus
     manager = multiprocessing.Manager()
     
-    # Shared Data Structures
-    shared_global_tracks = manager.dict()
-    global_id_counter = manager.Value('i', 1)
-    shared_target_id = manager.Value('i', -1)
-    lock = manager.Lock()
+    # Structures de données partagées entre tous les processus
+    shared_global_tracks = manager.dict()      # Tracks globaux pour le suivi inter-vidéo
+    global_id_counter = manager.Value('i', 1)  # Compteur d'ID globaux
+    shared_target_id = manager.Value('i', -1)  # ID de l'objet ciblé (-1 = aucun)
+    lock = manager.Lock()                       # Verrou pour accès concurrent sécurisé
 
-    # Get Video Files
+    # Vérifier l'existence du dossier d'entrée
     if not os.path.exists(config.INPUT_FOLDER):
-        print(f"Error: Input folder '{config.INPUT_FOLDER}' not found.")
+        print(f"Erreur: Le dossier '{config.INPUT_FOLDER}' n'existe pas.")
         return
 
+    # Récupérer toutes les vidéos à traiter
     video_files = [f for f in os.listdir(config.INPUT_FOLDER) if f.endswith(('.mp4', '.MP4'))]
-    print(f"Found videos: {video_files}")
+    print(f"Vidéos trouvées: {video_files}")
 
-    # Start Processes
+    # Créer et démarrer un processus par vidéo
     processes = []
     for video_name in video_files:
         p = multiprocessing.Process(
@@ -34,11 +45,16 @@ def main():
         processes.append(p)
         p.start()
 
-    # Wait for completion
+    # Attendre que tous les processus se terminent
     for p in processes:
         p.join()
 
-    print("Global processing complete.")
+    print("Traitement global terminé.")
+    
+    # Générer le résumé des objets détectés
+    print("\nGénération du résumé des objets...")
+    stats = generate_object_summary(config.OUTPUT_FOLDER)
+    print_summary_stats(stats)
 
 if __name__ == "__main__":
     main()

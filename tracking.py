@@ -1,3 +1,8 @@
+"""
+Module de tracking global des objets.
+Gère l'identification et le suivi des objets à travers plusieurs vidéos.
+"""
+
 from sklearn.metrics.pairwise import cosine_similarity
 import config
 

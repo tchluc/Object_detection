@@ -8,17 +8,40 @@ Ce projet utilise l'intelligence artificielle (YOLO) pour détecter, classifier 
 *   **Suivi (Tracking)** : Utilise l'algorithme BotSort (configuré via `custom_tracker.yaml`) pour suivre les objets d'une image à l'autre.
 *   **Ré-identification (ReID)** : Utilise un modèle de classification secondaire et la similarité cosinus pour conserver l'identité des objets même après une occlusion ou lors du passage d'une caméra à une autre (suivi global).
 *   **Zones d'Alerte** : Permet de définir des zones rectangulaires spécifiques pour chaque vidéo. Si un objet entre dans cette zone, une alerte est générée.
-*   **Export des Données** : Les trajectoires et les alertes sont sauvegardées dans un fichier CSV.
+*   **Export des Données** : Les trajectoires et les alertes sont sauvegardées dans des fichiers CSV.
+*   **Résumé des Objets** : Génère automatiquement un fichier récapitulatif avec les classes d'objets et leur nombre d'apparitions.
 *   **Visualisation** : Génère des vidéos annotées avec les boîtes englobantes, les identifiants et les indicateurs d'alerte.
 
 ## Structure du Projet
 
-*   `detection_classification.py` : Script principal qui effectue le traitement des vidéos.
-*   `select_zone.py` : Outil utilitaire pour sélectionner visuellement les zones d'alerte sur une vidéo et récupérer les coordonnées.
-*   `custom_tracker.yaml` : Fichier de configuration pour l'algorithme de suivi BotSort.
-*   `VIDEO_RESEAU_1/` : Dossier contenant les vidéos d'entrée à analyser.
-*   `RESULTATS_DRSI_11/` : Dossier de sortie contenant les résultats (vidéos annotées et fichier CSV).
-*   `yolo11m.pt`, `yolo26n-cls.pt`, etc. : Modèles de poids YOLO pré-entraînés.
+```
+Object_detection/
+├── main.py                  # Script principal (point d'entrée)
+├── processor.py             # Module de traitement vidéo
+├── tracking.py              # Module de tracking global
+├── alerts.py                # Module de gestion des alertes
+├── config.py                # Configuration centrale
+├── summary.py               # Module de génération de résumés
+├── select_zone.py           # Outil de sélection de zones
+├── custom_tracker.yaml      # Configuration du tracker BotSort
+├── VIDEO_RESEAU_1/          # Dossier des vidéos d'entrée
+├── RESULTATS_DRSI_11/       # Dossier des résultats
+│   ├── donnees_*.csv        # Trajectoires par vidéo
+│   ├── object_summary.csv   # Résumé des objets détectés
+│   └── annotated_*.mp4      # Vidéos annotées
+└── yolo*.pt                 # Modèles YOLO pré-entraînés
+```
+
+## Architecture
+
+Le projet est organisé en modules clairs avec des responsabilités séparées :
+
+*   **main.py** : Gestion du multiprocessing et coordination des traitements
+*   **processor.py** : Traitement des frames, détection et visualisation
+*   **tracking.py** : Logique de tracking global inter-vidéos
+*   **alerts.py** : Vérification des zones d'alerte
+*   **summary.py** : Génération de statistiques et résumés
+*   **config.py** : Paramètres centralisés et configuration
 
 ## Prérequis
 
@@ -51,14 +74,22 @@ Si vous souhaitez surveiller des zones spécifiques :
 4.  Une fenêtre s'ouvre. Dessinez un rectangle avec la souris autour de la zone à surveiller.
 5.  Les coordonnées s'afficheront dans la console (ex: `[100, 100, 500, 500]`).
 6.  Copiez ces coordonnées.
-7.  Ouvrez `detection_classification.py` et mettez à jour le dictionnaire `alert_zones` avec le nom de votre fichier vidéo et les coordonnées copiées.
+7.  Ouvrez `config.py` et mettez à jour le dictionnaire `ALERT_ZONES` avec le nom de votre fichier vidéo et les coordonnées copiées.
+
+Exemple dans `config.py` :
+```python
+ALERT_ZONES = {
+    'video1.mp4': [[100, 100, 500, 500]],
+    'video2.mp4': [[200, 150, 600, 450], [50, 50, 150, 150]],  # Plusieurs zones possibles
+}
+```
 
 ### 2. Lancer l'Analyse
 
 Exécutez le script principal :
 
 ```bash
-python detection_classification.py
+python main.py
 ```
 
 Le script va :
@@ -66,20 +97,39 @@ Le script va :
 *   Traiter chaque frame pour détecter et suivre les objets.
 *   Vérifier la présence d'objets dans les zones d'alerte définies.
 *   Afficher la progression dans la console.
+*   Générer automatiquement un résumé des objets détectés.
 
 ### 3. Analyser les Résultats
 
 Une fois l'analyse terminée, consultez le dossier `RESULTATS_DRSI_11` :
-*   **Vidéos annotées** : Vous verrez les objets détectés avec leurs ID et une marque rouge s'ils sont en alerte.
-*   **`donnees_trajectoires.csv`** : Fichier contenant l'historique complet des détections. Colonnes :
-    *   `camera` : Nom du fichier vidéo.
-    *   `frame` : Numéro de la frame.
-    *   `id` : Identifiant unique de l'objet (Global ID).
-    *   `class_name` : Type d'objet (ex: person, car).
-    *   `x_center`, `y_center` : Position de l'objet.
-    *   `alerte` : `1` si l'objet est dans la zone d'alerte, `0` sinon.
+
+*   **Vidéos annotées** : `annotated_*.mp4` - Vous verrez les objets détectés avec leurs ID et une marque rouge s'ils sont en alerte.
+*   **Trajectoires par vidéo** : `donnees_*.csv` - Fichiers contenant l'historique complet des détections pour chaque vidéo.
+    *   Colonnes : `camera`, `frame`, `id`, `class_name`, `x_center`, `y_center`, `alerte`
+*   **Résumé global** : `object_summary.csv` - Fichier récapitulatif avec :
+    *   Statistiques globales (toutes vidéos confondues)
+    *   Nombre d'apparitions par classe d'objet
+    *   Nombre d'objets uniques par classe
+    *   Statistiques détaillées par vidéo
 
 ## Personnalisation
 
-*   **Modèles** : Vous pouvez changer les modèles utilisés dans `detection_classification.py` (variables `model` et `reid`) pour utiliser d'autres versions de YOLO (ex: `yolov8n.pt` pour plus de rapidité, `yolo11x.pt` pour plus de précision).
-*   **Paramètres de Tracking** : Modifiez `custom_tracker.yaml` pour ajuster la sensibilité du suivi.
+*   **Modèles** : Vous pouvez changer les modèles utilisés dans `config.py` (variables `YOLO_MODEL_PATH` et `REID_MODEL_PATH`) pour utiliser d'autres versions de YOLO (ex: `yolov8n.pt` pour plus de rapidité, `yolo11x.pt` pour plus de précision).
+*   **Paramètres de Tracking** : Modifiez `custom_tracker.yaml` pour ajuster la sensibilité du suivi. Augmentez `track_buffer` pour un suivi plus persistant.
+*   **Seuil de Similarité** : Ajustez `SIMILARITY_THRESHOLD` dans `config.py` pour contrôler la sensibilité de la réidentification (0.0 à 1.0).
+
+## Suivi d'Objets Amélioré
+
+Le système utilise plusieurs techniques pour un tracking robuste :
+
+1. **Tracking Local** : BotSort avec ReID pour suivre les objets frame par frame dans une vidéo
+2. **Tracking Global** : Système de réidentification par similarité cosinus pour suivre les objets entre plusieurs vidéos
+3. **Track Buffer Étendu** : Configuration optimisée pour maintenir les tracks même après occlusion temporaire
+4. **Visualisation Interactive** : Appuyez sur 's' pendant la lecture pour cibler un objet spécifique et le suivre en temps réel
+
+## Notes Techniques
+
+*   Le traitement parallèle permet d'analyser plusieurs vidéos simultanément
+*   Les IDs globaux sont partagés entre tous les processus pour un suivi cohérent
+*   Les embeddings ReID permettent de réidentifier les objets même après perte temporaire
+*   Le système génère automatiquement des statistiques détaillées à la fin du traitement
