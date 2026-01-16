@@ -1,0 +1,8 @@
+runs/*
+RESULTATS_DRSI_11/*
+VIDEO_RESEAUX_CAMERA_DRSI/
+VIDEO_RESEAU_1/
+*.mp4
+*.avi
+*.mov
+*.mkv
