@@ -31,7 +31,7 @@ def generate_object_summary(csv_folder, output_file="object_summary.csv"):
         csv_path = os.path.join(csv_folder, csv_file)
         video_name = csv_file.replace('donnees_', '').replace('.csv', '')
         
-        with open(csv_path, 'r') as f:
+        with open(csv_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 class_name = row.get('class_name', 'unknown')
@@ -46,7 +46,7 @@ def generate_object_summary(csv_folder, output_file="object_summary.csv"):
     
     # Générer le fichier de résumé
     summary_path = os.path.join(csv_folder, output_file)
-    with open(summary_path, 'w', newline='') as f:
+    with open(summary_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(['Type', 'Classe', 'Nom_Video', 'Nombre_Apparitions', 'Objets_Uniques'])
         

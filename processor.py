@@ -28,12 +28,14 @@ def process_video_task(video_name, shared_global_tracks, shared_target_id, globa
         lock (Lock): Verrou pour l'accès concurrent aux données partagées
     """
     # Initialiser une instance Tk séparée pour ce processus (pour les dialogues)
+    root = None
     try:
         root = tk.Tk()
         root.withdraw()
-    except (ImportError, tk.TclError):
-        # Tkinter non disponible ou problème d'affichage
-        root = None
+    except ImportError:
+        print(f"[{video_name}] Warning: Tkinter non disponible, dialogues désactivés")
+    except tk.TclError:
+        print(f"[{video_name}] Warning: Problème d'affichage Tkinter, dialogues désactivés")
 
     print(f"[{video_name}] DÉMARRAGE...")
     
@@ -159,9 +161,12 @@ def process_video_task(video_name, shared_global_tracks, shared_target_id, globa
                             if crop_x2 > crop_x1 and crop_y2 > crop_y1:
                                 target_crop = frame[crop_y1:crop_y2, crop_x1:crop_x2]
                                 cv2.imshow(f"Tracking ID {current_target}", target_crop)
-                        except (cv2.error, IndexError, ValueError):
-                            # Erreur de traitement d'image ou coordonnées invalides
-                            pass
+                        except cv2.error as e:
+                            # Erreur OpenCV lors de l'affichage
+                            print(f"[{video_name}] Warning: Erreur affichage crop: {e}", flush=True)
+                        except (IndexError, ValueError) as e:
+                            # Coordonnées invalides
+                            print(f"[{video_name}] Warning: Coordonnées crop invalides: {e}", flush=True)
                     
                     # Dessiner la boîte englobante et l'ID
                     cv2.rectangle(frame, (x1, y1), (x2, y2), color, thickness)

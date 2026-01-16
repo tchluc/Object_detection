@@ -6,6 +6,7 @@ Vérifie que tous les modules sont correctement structurés et commentés.
 import os
 import sys
 import ast
+import re
 
 
 def check_file_has_docstring(filepath):
@@ -96,7 +97,6 @@ def validate_improvements():
         with open('custom_tracker.yaml', 'r') as f:
             content = f.read()
             # Extraire la valeur de track_buffer
-            import re
             match = re.search(r'track_buffer:\s*(\d+)', content)
             if match:
                 buffer_value = int(match.group(1))
